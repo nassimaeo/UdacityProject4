@@ -5,12 +5,9 @@ import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult } f
 import { CreateTodoRequest } from '../../requests/CreateTodoRequest'
 
 // I added these imports
-import * as AWS  from 'aws-sdk'
 import * as uuid from 'uuid'
 import { getUserId } from '../utils'
-
-const docClient = new AWS.DynamoDB.DocumentClient()
-const todosTable = process.env.TODOS_TABLE
+import { createTodoItem } from '../../businessLogic/todos'
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log('Processing event: ', event)
@@ -20,21 +17,10 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   const todoId = uuid.v4()
   const userId = getUserId(event)
   
-  const newItem = {
-      id : todoId,
-      todoId : todoId,
-      createdAt: new Date().toISOString(),
-      userId: userId, // Can be abbreviated to just "userId,"
-      done: false,
-      //attachmentUrl: "http://example.com/image.png", // TODO fix this
-      ...newTodo
-  }
+  const result = await createTodoItem(userId, todoId, newTodo)
 
-  await docClient.put({
-      TableName: todosTable,
-      Item : newItem
-  }).promise()
-
+  console.log("result update", result)
+  
   return {
       statusCode: 201,
       headers: {
@@ -42,7 +28,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         'Access-Control-Allow-Credentials': true
       },
       body: JSON.stringify({
-          item: newItem
+          item: result
       })
   }  
 

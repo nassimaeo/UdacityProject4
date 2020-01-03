@@ -5,8 +5,9 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler } f
 
 import * as AWS  from 'aws-sdk'
 import * as uuid from 'uuid'
+import { getUserId } from '../utils'
+import { updateImageTodoItem } from '../../businessLogic/todos'
 
-//const docClient = new AWS.DynamoDB.DocumentClient()
 
 const s3 = new AWS.S3({
     signatureVersion: 'v4'
@@ -15,9 +16,7 @@ const s3 = new AWS.S3({
 //const todosTable = process.env.TODOS_TABLE
 const bucketName = process.env.IMAGES_S3_BUCKET
 const urlExpiration = process.env.SIGNED_URL_EXPIRATION
-const todosTable = process.env.TODOS_TABLE
 
-const docClient = new AWS.DynamoDB.DocumentClient()
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const todoId = event.pathParameters.todoId
@@ -29,14 +28,16 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   // generate url 
   const imageId = uuid.v4()
   const url = getUploadUrl(imageId)
-
   const imageUrl = `https://${bucketName}.s3.amazonaws.com/${imageId}`
+  const userId = getUserId(event)
 
   //update the todoitem with the imageUrl
+  /*
   var params = {
     TableName:todosTable,
     Key:{
-      "id":todoId
+      "userId": userId,
+      "todoId": todoId
     },
     UpdateExpression: "SET attachmentUrl = :url",
     ExpressionAttributeValues:{
@@ -46,6 +47,8 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   };
 
   const result = await docClient.update(params).promise()
+  */
+  const result = await updateImageTodoItem(userId, todoId, imageUrl)
   console.log("result getUpdateURl", result)
 
 
